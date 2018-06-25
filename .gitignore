@@ -1,6 +1,3 @@
-# Build files (Linux and Windows)
-*.bin
-*.exe
-
-# Sublime files
-*sublime-workspace
+# Build files
+*.o
+tetris

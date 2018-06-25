@@ -2,11 +2,9 @@
 #include <time.h>
 #include <stdlib.h>
 
-using namespace std;
-
-const int B = 3; // Vanish zone heigth
-const int M = 22; // Field heigth
-const int N = 11; // Field width
+#define B 3  // Vanish zone heigth
+#define M 22 // Field heigth
+#define N 11 // Field width
 
 const float S = 0.05; // Square size
 
@@ -16,24 +14,23 @@ const float S = 0.05; // Square size
  */
 
 const int figures[7][4] = {
-	4, 5, 6, 7, // I
-	1, 2, 5, 6, // O
-	4, 5, 6, 1, // T
-	0, 1, 5, 6, // S
-	4, 5, 1, 2, // Z
-	0, 4, 5, 6, // J
-	4, 5, 6, 2, // L
+	{4, 5, 6, 7}, // I
+	{1, 2, 5, 6}, // O
+	{4, 5, 6, 1}, // T
+	{0, 1, 5, 6}, // S
+	{4, 5, 1, 2}, // Z
+	{0, 4, 5, 6}, // J
+	{4, 5, 6, 2}, // L
 };
 
-// http://prideout.net/archive/colors.php
 const float colors[7][3] = {
-	0.000, 0.545, 0.545, // DarkCyan (Cyan)
-	1.000, 0.843, 0.000, // Gold (Yellow)
-	0.545, 0.000, 0.545, // DarkMagenta (Purple)
-	0.196, 0.804, 0.196, // LimeGreen (Green)
-	0.698, 0.133, 0.133, // FireBrick (Red)
-	0.098, 0.098, 0.439, // MidnightBlue (Blue)
-	1.000, 0.549, 0.000, // DarkOrange (Orange)
+	{0.000, 0.545, 0.545}, // Cyan
+	{1.000, 0.843, 0.000}, // Yellow
+	{0.545, 0.000, 0.545}, // Purple
+	{0.196, 0.804, 0.196}, // Green
+	{0.698, 0.133, 0.133}, // Red
+	{0.098, 0.098, 0.439}, // Blue
+	{1.000, 0.549, 0.000}, // Orange
 };
 
 struct point {
@@ -44,9 +41,9 @@ int delay = 300;
 int field[M][N] = {0};
 int shape, shapeNext;
 
-bool gameOver = false;
+int gameOver = 0;
 
-bool check(void) {
+int check(void) {
 	for (int i = 0; i < 4; i++) {
 		if (a[i].x < 0 || a[i].x >= N || a[i].y >= M || field[a[i].y][a[i].x]) {
 			return 0;
@@ -84,7 +81,7 @@ void spawnFigure(void) {
 
 	// End the game if there is a collision
 	if (!check()) {
-		gameOver = true;
+		gameOver = 1;
 	}
 
 	// Generate the next figure
@@ -95,12 +92,16 @@ void drawText(
 		float x,
 		float y,
 		char *string,
-		float Ox = 0.0,
-		float Oy = 0.0,
-		void *font = GLUT_BITMAP_HELVETICA_18) {
+		float Ox,
+		float Oy,
+		void *font) {
+	
+	// if (Ox == NULL) Ox = 0.0f;
+	// if (Oy == NULL) Ox = 0.0f;
+	if (font == NULL) font = GLUT_BITMAP_HELVETICA_18;
 
 	// Offset the text
-	y = 1.0 - y - Oy;
+	y = -1.0 + y + Oy;
 	x = -1.0 + x + Ox;
 
 	// Set the position
@@ -117,12 +118,14 @@ void drawRectangle(
 		float y,
 		float width,
 		float height,
-		float Ox = 0.0,
-		float Oy = 0.0,
-		GLenum type = GL_POLYGON) {
+		float Ox,
+		float Oy,
+		GLenum type) {
+
+	if (type == 0) type = GL_POLYGON;
 
 	// Offset the rectangle
-	y = 1.0 - y - Oy;
+	y = -1.0 + y + Oy;
 	x = -1.0 + x + Ox;
 
 	// Start drawing
@@ -151,24 +154,24 @@ void draw(void) {
 	glLoadIdentity();
 
 	// Invert Y axis
-	// gluOrtho2D(-1.0, 1.0, 1.0, -1.0);
+	gluOrtho2D(-1.0, 1.0, 1.0, -1.0);
 
 	// Draw the current figure
 	for (int i = 0; i < 4; i++) {
 		if (a[i].y >= B) {
 			setFigureColor(shape);
-			drawRectangle(a[i].x * S, a[i].y * S, S, S, Ox, Oy);
+			drawRectangle(a[i].x * S, a[i].y * S, S, S, Ox, Oy, 0);
 		}
 	}
 
 	// Draw the next figure
 	if (!gameOver) {
 		glColor3f(1.0, 1.0, 1.0);
-		drawText(0, 0, (char *) "Next figure:", Ox + N * S * 0.5 - 2 * S, Oy + (S * B) - 5 * S);
+		drawText(0, 0, (char *) "Next figure:", Ox + N * S * 0.5 - 2 * S, Oy - 3 * S, NULL);
 
 		for (int i = 0; i < 4; i++) {
 			setFigureColor(shapeNext);
-			drawRectangle(c[i].x * S, c[i].y * S, S, S, Ox, Oy);
+			drawRectangle(c[i].x * S, c[i].y * S, S, S, Ox, Oy, 0);
 		}
 	}
 
@@ -178,7 +181,7 @@ void draw(void) {
 			if (i >= B) {
 				if (field[i][j] != 0) {
 					setFigureColor(field[i][j] - 1);
-					drawRectangle(j * S, i * S, S, S, Ox, Oy);
+					drawRectangle(j * S, i * S, S, S, Ox, Oy, 0);
 				}
 			}
 
@@ -190,18 +193,18 @@ void draw(void) {
 
 	// Draw the field outline
 	glColor3f(1.0, 1.0, 1.0);
-	drawRectangle(0, 0, N * S, 4 * S, Ox, Oy + (S * B) - 4 * S, GL_LINE_LOOP);
-	drawRectangle(0, 0, N * S, (M - B) * S, Ox, Oy + (S * B), GL_LINE_LOOP);
+	drawRectangle(0, 0, N * S, 4 * S, Ox, Oy + 2 * S, GL_LINE_LOOP);
+	drawRectangle(0, 0, N * S, (M - B) * S, Ox, Oy + (M - 1) * S, GL_LINE_LOOP);
 
 	if (gameOver) {
 		glColor3f(1.0, 0.3, 0.0);
-		drawText(0, 0, (char *) "Game over!", Ox + N * S * 0.5 - 2 * S, Oy + (S * B) -  1.8 * S);
+		drawText(0, 0, (char *) "Game over!", Ox + N * S * 0.5 - 2 * S, Oy + 0.2 * S, NULL);
 	}
 
 	glutSwapBuffers();
 }
 
-void timerFunc(int) {
+void timerFunc() {
 	// Gravity
 	for (int i = 0; i < 4; i++) {
 		b[i] = a[i];
@@ -268,7 +271,7 @@ void rotate(void) {
 	// Don't rotate if the figure is an O
 	if (shape != 1) {
 		// Set rotation center
-		point p = a[1];
+		struct point p = a[1];
 
 		// Rotate each square around the rotation center
 		for (int i = 0; i < 4; i++) {
